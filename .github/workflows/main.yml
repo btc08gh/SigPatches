@@ -1,0 +1,29 @@
+name: Push patch release
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: bundle patches
+        run: sh ./bundle_patches.sh
+
+      - name: Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: patches
+          path: patches.zip
+
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.x
+
+      - name: Push release
+        run: sh ./push_release.sh >/dev/null 2>&1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
