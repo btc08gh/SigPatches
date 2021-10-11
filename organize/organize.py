@@ -29,16 +29,6 @@ def mkdirp(path):
         else:
             raise
 
-def symlink_force(target, link_name):
-    try:
-        os.symlink(target, link_name)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            os.remove(link_name)
-            os.symlink(target, link_name)
-        else:
-            raise e
-
 def get_ncaid(filename):
     BLOCKSIZE = 65536
     hasher = hashlib.sha256()
@@ -87,33 +77,33 @@ for version in os.listdir("."):
         ncaFull = newName
 
         # Ensure meta files have .cnmt.nca extension
-        process = subprocess.Popen(["sh", "-c", HACTOOL_PROGRAM + " '" + ncaFull + "' | grep 'Content Type:' | awk '{print $3}'"], stdout=subprocess.PIPE)
-        contentType = process.communicate()[0].split(b"\n")[0].decode('utf-8')
+        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+        contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
         if contentType == "Meta" and not nca.endswith(".cnmt.nca"):
             print_verbose(ncaFull + " -> " + ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
             shutil.move(ncaFull, ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
 
-    print("# Sort by titleid")
+    print("# Sort by titleid")    
     for nca in os.listdir(version + "/nca"):
         ncaFull = version + "/nca/" + nca
-        process = subprocess.Popen(["sh", "-c", HACTOOL_PROGRAM + " '" + ncaFull + "' | grep 'Title ID:' | awk '{print $3}'"], stdout=subprocess.PIPE)
-        titleId = process.communicate()[0].split(b"\n")[0].decode('utf-8')
-        process = subprocess.Popen(["sh", "-c", HACTOOL_PROGRAM + " '" + ncaFull + "' | grep 'Content Type:' | awk '{print $3}'"], stdout=subprocess.PIPE)
-        contentType = process.communicate()[0].split(b"\n")[0].decode('utf-8')
+        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+        titleId = process.communicate()[0].split("Title ID:                           ")[1].split("\n")[0]
+        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+        contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
 
         mkdirp(version + "/titleid/" + titleId)
 
         print_verbose(version + "/titleid/" + titleId + "/" + contentType + ".nca -> " + "../../nca/" + nca)
-        symlink_force("../../nca/" + nca, version + "/titleid/" + titleId + "/" + contentType + ".nca")
+        shutil.copyfile(version + "/nca/" + nca, version + "/titleid/" + titleId + "/" + contentType + ".nca")
 
     print("# Extracting ES")
     esFull = version + "/"
     ncaParent = version + "/titleid/0100000000000033"
     ncaPartial = ncaParent + "/Program.nca"
     ncaFull = version + "/titleid/0100000000000033/exefs/main"
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tnca '{version}/titleid/0100000000000033/Program.nca' --exefsdir '{version}/titleid/0100000000000033/exefs/'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + version + "/titleid/0100000000000033/exefs/", version + "/titleid/0100000000000033/Program.nca"], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tnso0 '{ncaFull}' --uncompressed '{version}/uncompressed_es.nso0'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=" + version + "/uncompressed_es.nso0", ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
 
     print("# Extracting NIFM")
@@ -121,40 +111,40 @@ for version in os.listdir("."):
     ncaParent = version + "/titleid/010000000000000f"
     ncaPartial = ncaParent + "/Program.nca"
     ncaFull = version + "/titleid/010000000000000f/exefs/main"
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tnca '{version}/titleid/010000000000000f/Program.nca' --exefsdir '{version}/titleid/010000000000000f/exefs/'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + version + "/titleid/010000000000000f/exefs/", version + "/titleid/010000000000000f/Program.nca"], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tnso0 '{ncaFull}' --uncompressed '{version}/uncompressed_nifm.nso0'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=" + version + "/uncompressed_nifm.nso0", ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
 
     print("# Extracting fat32")
     ncaParent = version + "/titleid/0100000000000819"
-    pk21dir = ncaParent + "/package2"
-    ini1dir = ncaParent + "/ini1"
+    pk21dir = ncaParent + "/romfs/nx/package2"
+    ini1dir = ncaParent + "/romfs/nx/ini1"
     ncaFull = ncaParent + "/Data.nca"
-    fat32Full = version + "/uncompressed_fat32.kip1"
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} '{ncaFull}' -tnca --romfsdir '{ncaParent}/romfs'"], stdout=subprocess.DEVNULL)
+    fat32Full = version + "/uncompressed_fat32.kip1"    
+    process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tpk21 '{ncaParent}/romfs/nx/package2' --ini1dir '{ini1dir}'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} '{ncaParent}/ini1/FS.kip1' -tkip1 --uncompressed='{fat32Full}'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=" + fat32Full, ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
     process.wait()
-    fat32Compressed = version + "/titleid/0100000000000819/ini1/FS.kip1"
+    fat32Compressed = version + "/titleid/0100000000000819/romfs/nx/ini1/FS.kip1"
     fsCopy = version  + "/compressed_fat32.kip1"
     process = shutil.copyfile(fat32Compressed, fsCopy)
     
     print("# Extracting exfat")
     ncaParent = version + "/titleid/010000000000081b"
-    pk21dir = ncaParent + "/package2"
-    ini1dir = ncaParent + "/ini1"
+    pk21dir = ncaParent + "/romfs/nx/package2"
+    ini1dir = ncaParent + "/romfs/nx/ini1"
     ncaFull = ncaParent + "/Data.nca"
     exfatFull = version + "/uncompressed_exfat.kip1"
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} '{ncaFull}' -tnca --romfsdir '{ncaParent}/romfs'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} -tpk21 '{ncaParent}/romfs/nx/package2' --package2dir '{pk21dir}' --ini1dir '{ini1dir}'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
     process.wait()
-    process = subprocess.Popen(["sh", "-c", f"{HACTOOL_PROGRAM} '{ncaParent}/ini1/FS.kip1' -tkip1 --uncompressed='{exfatFull}'"], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=" + exfatFull, ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
     process.wait()
-    exfatCompressed = version + "/titleid/010000000000081b/ini1/FS.kip1"
+    exfatCompressed = version + "/titleid/010000000000081b/romfs/nx/ini1/FS.kip1"
     fsCopy = version  + "/compressed_exfat.kip1"
     process = shutil.copyfile(exfatCompressed, fsCopy)
 
