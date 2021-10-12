@@ -14,6 +14,7 @@ This repository contains "signature patch" bundle releases, and tutorials on how
   - [Python script to generate FS patches, usage: place uncompressed_exfat.kip1, compressed_exfat.kip1 and compressed_fat32.kip1 in the same folder then use "python3 fs_patch.py"](fs_patch.py)
   - [Guide describing how to patch ES, - TitleID 0100000000000033.](ES-0100000000000033.md)
   - [Python script to generate ES patches, usage: place uncompressed ES as "main" in the same folder then use "python3 es_patch.py"](es_patch.py)
+  - [Python script to generete patches for Atmospheres loader, usage: place an atmosphere release .zip in the same folder and then use "python loader_patch.py"](loader_patch.py)
 
 * Powerful batch-processing script capable of processing multiple system firmwares at once, while also outputting patches for each one:
   - [Python script to process dumped FW files from system partition and make patches for the system firmware version that was dumped. Usage: make a directory in the organize folder (example 13.0.0 , or just generic "firmware" instead of numbered folders, anything works.), then place the dumped nca.00/nca files/folders (both works) in a sub-folder called "nca" (example: organize/13.0.0/nca/*.nca), then use "python3 organize.py". The patches will be output to the atmosphere folder, ready to be packed up and pushed as a release](organize/organize.py)

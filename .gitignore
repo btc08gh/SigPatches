@@ -1,4 +1,5 @@
 organize/**
 bootloader/**
-patches.ini
-patches.zip
+*.ini
+*.zip
+*.kip1
