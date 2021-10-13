@@ -206,7 +206,7 @@ for version in os.listdir("."):
         text_file = open('../atmosphere/kip_patches/fs_patches/%s.ips' % fat32hash, 'wb')
         text_file.write(bytes.fromhex(str("5041544348" + patch1 + patch2 + "454F46")))
         text_file.close()
-        text_file = open('../hekate_patches/' + version + '.ini', 'w')
+        text_file = open('../hekate_patches/fs_patches_' + exfathash[:16] + "+" + fat32hash[:16] + '.ini', 'w')
         text_file.write('\n')
         text_file.write("#FS " + version + "-fat32\n")
         text_file.write("[FS:" + '%s' % fat32hash[:16] + "]\n")
