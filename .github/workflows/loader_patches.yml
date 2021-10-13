@@ -2,7 +2,7 @@ name: Make Loader patches
 
 on:
   schedule: 
-    - cron:  '* */1 * * *'
+    - cron:  '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         CHANGED=$(git diff --name-only)  
         git add .
         if [[ `git status --porcelain` ]]; then
-          git commit -m "automatic: add new loader patches ($CHANGED)"
+          git commit -m "automatic every 12 hours: add new loader patches ($CHANGED)"
           git push
         else
           echo "Nothing to commit!"
