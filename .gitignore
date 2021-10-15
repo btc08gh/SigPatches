@@ -1,5 +1,7 @@
 organize/**
 bootloader/**
-*.ini
+firmware/**
 *.zip
 *.kip1
+*.nso0
+ams.hash

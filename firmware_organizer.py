@@ -7,7 +7,6 @@ import subprocess
 import shutil
 import errno
 import hashlib
-import re
 from pathlib import Path
 
 def get_es_build_id():
@@ -43,123 +42,114 @@ def print_verbose(*args, **kwargs):
     if VERBOSE:
         print(*args, **kwargs)
 
-for version in os.listdir("."):
     # Ignore files (only treat directories)
-    if os.path.isfile(version):
-        continue
-
     # Rename CNMTs to make them easier to find. Also, if nca is a folder,
     # get its content. Also, get the hash, and give it the proper ncaid name
-    print(f"===== Handling firmware files =====")
+print(f"===== Handling firmware files =====")
 
-    HACTOOL_PROGRAM = "hactool"
-    if os.path.isfile(version + "/dev"):
-        HACTOOL_PROGRAM += " --dev"
+HACTOOL_PROGRAM = "hactool"
+if os.path.isfile("firmware" + "/dev"):
+    HACTOOL_PROGRAM += " --dev"
 
-    print(f"# Normalizing the nca folder")
-    for nca in os.listdir(version):
+print(f"# Normalizing the nca folder")
+for nca in os.listdir("firmware"):
 
-        ncaFull = version + "/" + nca
-        # Fix "folder-as-file" files when dumped from Switch NAND
-        if nca == "titleid":
-            continue
-        if os.path.isdir(ncaFull):
-            print_verbose(f"{ncaFull}/00 -> {ncaFull}")
-            os.rename(ncaFull, ncaFull + "_folder")
-            os.rename(ncaFull + "_folder/00", ncaFull)
-            os.rmdir(ncaFull + "_folder")
-        # Ensure the NCAID is correct (It's wrong when dumped from the
-        # Placeholder folder on a Switch NAND
-        ncaid = get_ncaid(ncaFull)
-        newName = version + "/" + ncaid + "." + ".".join(os.path.basename(ncaFull).split(".")[1:])
-        print_verbose(f"{ncaFull} -> {newName}")
-        os.rename(ncaFull, newName)
-        ncaFull = newName
-
-        # Ensure meta files have .cnmt.nca extension
-        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
-        contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
-        if contentType == "Meta" and not nca.endswith(".cnmt.nca"):
-            print_verbose(ncaFull + " -> " + ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
-            shutil.move(ncaFull, ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
-
-    print("# Sort by titleid")
-    for nca in os.listdir(version):
-        ncaFull = version + "/" + nca
-        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
-        titleId = process.communicate()[0].split("Title ID:                           ")[1].split("\n")[0]
-        process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
-        contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
-
-        mkdirp(version + "/titleid/" + titleId)
-
-        print_verbose(version + "/titleid/" + titleId + "/" + contentType + ".nca -> " + "../../" + nca)
-        shutil.move(version + "/" + nca, version + "/titleid/" + titleId + "/" + contentType + ".nca")
-
-    print("# Extracting ES")
-    esFull = version + "/"
-    ncaParent = version + "/titleid/0100000000000033"
-    ncaPartial = ncaParent + "/Program.nca"
-    ncaFull = version + "/titleid/0100000000000033/exefs/main"
-    process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + version + "/titleid/0100000000000033/exefs/", version + "/titleid/0100000000000033/Program.nca"], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=uncompressed_es.nso0", ncaFull], stdout=subprocess.DEVNULL)
-    process.wait()
-
-    print("# Extracting NIFM")
-    nifmFull = version + "/"
-    ncaParent = version + "/titleid/010000000000000f"
-    ncaPartial = ncaParent + "/Program.nca"
-    ncaFull = version + "/titleid/010000000000000f/exefs/main"
-    process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + version + "/titleid/010000000000000f/exefs/", version + "/titleid/010000000000000f/Program.nca"], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=uncompressed_nifm.nso0", ncaFull], stdout=subprocess.DEVNULL)
-    process.wait()
-
-    print("# Extracting fat32")
-    ncaParent = version + "/titleid/0100000000000819"
-    pk21dir = ncaParent + "/romfs/nx/package2"
-    ini1dir = ncaParent + "/romfs/nx/ini1"
-    ncaFull = ncaParent + "/Data.nca"
-    process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uncompressed_fat32.kip1", ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
-    process.wait()
-    fat32Compressed = version + "/titleid/0100000000000819/romfs/nx/ini1/FS.kip1"
-    fsCopy = "compressed_fat32.kip1"
-    process = shutil.copyfile(fat32Compressed, fsCopy)
-    
-    print("# Extracting exfat")
-    ncaParent = version + "/titleid/010000000000081b"
-    pk21dir = ncaParent + "/romfs/nx/package2"
-    ini1dir = ncaParent + "/romfs/nx/ini1"
-    ncaFull = ncaParent + "/Data.nca"
-    process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
-    process.wait()
-    process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uncompressed_exfat.kip1", ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
-    process.wait()
-    exfatCompressed = version + "/titleid/010000000000081b/romfs/nx/ini1/FS.kip1"
-    fsCopy = "compressed_exfat.kip1"
-    process = shutil.copyfile(exfatCompressed, fsCopy)
-
-for version in os.listdir("."):
-    # Ignore files (only treat directories)
-    if os.path.isfile(version):
+    ncaFull = "firmware" + "/" + nca
+    # Fix "folder-as-file" files when dumped from Switch NAND
+    if nca == "titleid":
         continue
+    if os.path.isdir(ncaFull):
+        print_verbose(f"{ncaFull}/00 -> {ncaFull}")
+        os.rename(ncaFull, ncaFull + "_folder")
+        os.rename(ncaFull + "_folder/00", ncaFull)
+        os.rmdir(ncaFull + "_folder")
+    # Ensure the NCAID is correct (It's wrong when dumped from the
+    # Placeholder folder on a Switch NAND
+    ncaid = get_ncaid(ncaFull)
+    newName = "firmware" + "/" + ncaid + "." + ".".join(os.path.basename(ncaFull).split(".")[1:])
+    print_verbose(f"{ncaFull} -> {newName}")
+    os.rename(ncaFull, newName)
+    ncaFull = newName
 
-    print(f"===== Printing relevant hashes and buildids =====")
-    esuncompressed = "uncompressed_es.nso0"
-    nifmuncompressed = "uncompressed_nifm.nso0"
-    fat32compressed = "compressed_exfat.kip1"
-    exfatcompressed = "compressed_fat32.kip1"
+    # Ensure meta files have .cnmt.nca extension
+    process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+    contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
+    if contentType == "Meta" and not nca.endswith(".cnmt.nca"):
+        print_verbose(ncaFull + " -> " + ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
+        shutil.move(ncaFull, ".".join(ncaFull.split(".")[:-1]) + ".cnmt.nca")
 
-    print("es build-id: " + get_es_build_id())
-    print("nifm build-id: " + get_nifm_build_id())
-    exfathash = hashlib.sha256(open(exfatcompressed, 'rb').read()).hexdigest().upper()
-    print("exfat sha256: " + exfathash)
-    fat32hash = hashlib.sha256(open(fat32compressed, 'rb').read()).hexdigest().upper()
-    print("fat32 sha256: " + fat32hash)
+print("# Sort by titleid")
+for nca in os.listdir("firmware"):
+    ncaFull = "firmware" + "/" + nca
+    process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+    titleId = process.communicate()[0].split("Title ID:                           ")[1].split("\n")[0]
+    process = subprocess.Popen(["hactool", "--intype=nca", ncaFull], stdout=subprocess.PIPE, universal_newlines=True)
+    contentType = process.communicate()[0].split("Content Type:                       ")[1].split("\n")[0]
+
+    mkdirp("firmware" + "/titleid/" + titleId)
+
+    print_verbose("firmware" + "/titleid/" + titleId + "/" + contentType + ".nca -> " + "../../" + nca)
+    shutil.move("firmware" + "/" + nca, "firmware" + "/titleid/" + titleId + "/" + contentType + ".nca")
+
+print("# Extracting ES")
+esFull = "firmware" + "/"
+ncaParent = "firmware" + "/titleid/0100000000000033"
+ncaPartial = ncaParent + "/Program.nca"
+ncaFull = "firmware" + "/titleid/0100000000000033/exefs/main"
+process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + "firmware" + "/titleid/0100000000000033/exefs/", "firmware" + "/titleid/0100000000000033/Program.nca"], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=uncompressed_es.nso0", ncaFull], stdout=subprocess.DEVNULL)
+process.wait()
+
+print("# Extracting NIFM")
+nifmFull = "firmware" + "/"
+ncaParent = "firmware" + "/titleid/010000000000000f"
+ncaPartial = ncaParent + "/Program.nca"
+ncaFull = "firmware" + "/titleid/010000000000000f/exefs/main"
+process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + "firmware" + "/titleid/010000000000000f/exefs/", "firmware" + "/titleid/010000000000000f/Program.nca"], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=nso0", "--uncompressed=uncompressed_nifm.nso0", ncaFull], stdout=subprocess.DEVNULL)
+process.wait()
+
+print("# Extracting fat32")
+ncaParent = "firmware" + "/titleid/0100000000000819"
+pk21dir = ncaParent + "/romfs/nx/package2"
+ini1dir = ncaParent + "/romfs/nx/ini1"
+ncaFull = ncaParent + "/Data.nca"
+process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uncompressed_fat32.kip1", ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
+process.wait()
+fat32Compressed = "firmware" + "/titleid/0100000000000819/romfs/nx/ini1/FS.kip1"
+fsCopy = "compressed_fat32.kip1"
+process = shutil.copyfile(fat32Compressed, fsCopy)
+
+print("# Extracting exfat")
+ncaParent = "firmware" + "/titleid/010000000000081b"
+pk21dir = ncaParent + "/romfs/nx/package2"
+ini1dir = ncaParent + "/romfs/nx/ini1"
+ncaFull = ncaParent + "/Data.nca"
+process = subprocess.Popen(["hactool", "--intype=nca", "--romfsdir=" + ncaParent + "/romfs", ncaFull], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=pk21", "--ini1dir=" + ini1dir, pk21dir], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uncompressed_exfat.kip1", ini1dir + "/FS.kip1"], stdout=subprocess.DEVNULL)
+process.wait()
+exfatCompressed = "firmware" + "/titleid/010000000000081b/romfs/nx/ini1/FS.kip1"
+fsCopy = "compressed_exfat.kip1"
+process = shutil.copyfile(exfatCompressed, fsCopy)
+
+print(f"===== Printing relevant hashes and buildids =====")
+esuncompressed = "uncompressed_es.nso0"
+nifmuncompressed = "uncompressed_nifm.nso0"
+fat32compressed = "compressed_exfat.kip1"
+exfatcompressed = "compressed_fat32.kip1"
+
+print("es build-id: " + get_es_build_id())
+print("nifm build-id: " + get_nifm_build_id())
+exfathash = hashlib.sha256(open(exfatcompressed, 'rb').read()).hexdigest().upper()
+print("exfat sha256: " + exfathash)
+fat32hash = hashlib.sha256(open(fat32compressed, 'rb').read()).hexdigest().upper()
+print("fat32 sha256: " + fat32hash)
