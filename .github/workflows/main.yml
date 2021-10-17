@@ -25,6 +25,12 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: Atmosphere-NX/Atmosphere
+          path: Atmosphere
+
       - name: Push release
         run: sh ./push_release.sh >/dev/null 2>&1
         env: 
