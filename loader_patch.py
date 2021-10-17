@@ -21,7 +21,7 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
         with open('uloader.kip1', 'rb') as fi:
             read_loader = fi.read()
             result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', read_loader)
-            patch = "%06X%s%s" % (result.end(), "0001", "01")
+            patch = "%06X%s%s" % (result.end(), "0001", "00")
             hash = hashlib.sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
             text_file = open('atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
             text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
