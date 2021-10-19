@@ -6,10 +6,12 @@ import time
 import hashlib
 
 print(glob.glob('./atmosphere-*.zip')[0])
+AMSVER = (glob.glob('./atmosphere-*.zip')[0][13:18])
 with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
     with amszip.open('atmosphere/package3') as package3:
         read_data = package3.read()
         size = int.from_bytes(read_data[0x43C:0x43F], "little")
+        AMSHASH = hex(int.from_bytes(read_data[0x3C:0x40], "little"))[2:]
         loader_start = int.from_bytes(read_data[0x438:0x43B], "little") + 0x100000
         loader_end = loader_start + size
         loader_kip = read_data[loader_start:loader_end]
@@ -28,6 +30,7 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
             text_file.close()
             text_file = open('hekate_patches/loader_patch_%s.ini' % hash[:16], 'w')
             text_file.write('\n')
+            text_file.write("#Loader Atmosphere-" + AMSVER + "-" + AMSHASH + "\n")
             text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
             hekate_bytes = fi.seek(result.end())
             text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()-0x100) + ':0x1:' + fi.read(0x1).hex().upper() + ',00\n')
