@@ -1,10 +1,16 @@
+from urllib.parse import unquote
+from urllib.request import urlretrieve
+from urllib.request import urlopen
 from zipfile import ZipFile
 import subprocess
 import re
 import glob
 import time
 import hashlib
+import os
 
+amszipname = unquote(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8').split('/')[-1])
+urlretrieve(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8'), amszipname)
 print(glob.glob('./atmosphere-*.zip')[0])
 AMSVER = (glob.glob('./atmosphere-*.zip')[0][13:18])
 with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
@@ -35,3 +41,9 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
             hekate_bytes = fi.seek(result.end())
             text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()-0x100) + ':0x1:' + fi.read(0x1).hex().upper() + ',00\n')
             text_file.close()
+            fi.close()
+            package3.close()
+            amszip.close()
+            os.remove(glob.glob('./atmosphere-*.zip')[0])
+            os.remove("./uloader.kip1")
+            os.remove("./loader.kip1")
