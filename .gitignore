@@ -5,3 +5,5 @@ firmware/**
 *.kip1
 *.nso0
 ams.hash
+Atmosphere/**
+patches.zip
