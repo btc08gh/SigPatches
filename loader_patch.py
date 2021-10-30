@@ -2,13 +2,121 @@ from urllib.parse import unquote
 from urllib.request import urlretrieve
 from urllib.request import urlopen
 from zipfile import ZipFile
-import subprocess
 import re
 import glob
 import time
 import hashlib
 import os
+import sys
+import struct
+from io import BytesIO
+import lz4.block
 from pathlib import Path
+from struct import unpack as up, pack as pk
+
+if sys.version_info[0] == 3:
+    iter_range = range
+    int_types = (int,)
+    ascii_string = lambda b: b.decode('ascii')
+    bytes_to_list = lambda b: list(b)
+    list_to_bytes = lambda l: bytes(l)
+else:
+    iter_range = xrange
+    int_types = (int, long)
+    ascii_string = lambda b: str(b)
+    bytes_to_list = lambda b: map(ord, b)
+    list_to_bytes = lambda l: ''.join(map(chr, l))
+    
+def read_from(self, arg, offset):
+    old = self.tell()
+    try:
+        self.seek(offset)
+        out = self.read(arg)
+    finally:
+        self.seek(old)
+    return out
+
+def kip1_blz_decompress(compressed):
+    compressed_size, init_index, uncompressed_addl_size = struct.unpack('<III', compressed[-0xC:])
+    decompressed = compressed[:] + b'\x00' * uncompressed_addl_size
+    decompressed_size = len(decompressed)
+    if len(compressed) != compressed_size:
+        assert len(compressed) > compressed_size
+        compressed = compressed[len(compressed) - compressed_size:]
+    if not (compressed_size + uncompressed_addl_size):
+        return b''
+    compressed = bytes_to_list(compressed)
+    decompressed = bytes_to_list(decompressed)
+    index = compressed_size - init_index
+    outindex = decompressed_size
+    while outindex > 0:
+        index -= 1
+        control = compressed[index]
+        for i in iter_range(8):
+            if control & 0x80:
+                if index < 2:
+                    raise ValueError('Compression out of bounds!')
+                index -= 2
+                segmentoffset = compressed[index] | (compressed[index+1] << 8)
+                segmentsize = ((segmentoffset >> 12) & 0xF) + 3
+                segmentoffset &= 0x0FFF
+                segmentoffset += 2
+                if outindex < segmentsize:
+                    raise ValueError('Compression out of bounds!')
+                for j in iter_range(segmentsize):
+                    if outindex + segmentoffset >= decompressed_size:
+                        raise ValueError('Compression out of bounds!')
+                    data = decompressed[outindex+segmentoffset]
+                    outindex -= 1
+                    decompressed[outindex] = data
+            else:
+                if outindex < 1:
+                    raise ValueError('Compression out of bounds!')
+                outindex -= 1
+                index -= 1
+                decompressed[outindex] = compressed[index]
+            control <<= 1
+            control &= 0xFF
+            if not outindex:
+                break
+    return list_to_bytes(decompressed)
+    
+class BinFile(object):
+    def __init__(self, li):
+        self._f = li
+
+    def read(self, arg):
+        if isinstance(arg, str):
+            fmt = '<' + arg
+            size = struct.calcsize(fmt)
+            raw = self._f.read(size)
+            out = struct.unpack(fmt, raw)
+            if len(out) == 1:
+                return out[0]
+            return out
+        elif arg is None:
+            return self._f.read()
+        else:
+            out = self._f.read(arg)
+            return out
+
+    def read_from(self, arg, offset):
+        old = self.tell()
+        try:
+            self.seek(offset)
+            out = self.read(arg)
+        finally:
+            self.seek(old)
+        return out
+
+    def seek(self, off):
+        self._f.seek(off)
+
+    def close(self):
+        self._f.close()
+
+    def tell(self):
+        return self._f.tell()
 
 Path("./hekate_patches").mkdir(parents=True, exist_ok=True)
 Path("./atmosphere/kip_patches/loader_patches").mkdir(parents=True, exist_ok=True)
@@ -27,30 +135,41 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
         text_file = open('loader.kip1', 'wb')
         text_file.write(loader_kip)
         text_file.close()
-        process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uloader.kip1", "loader.kip1"], stdout=subprocess.DEVNULL)
-        time.sleep(3)
-        with open('uloader.kip1', 'rb') as fi:
-            read_loader = fi.read()
-            result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', read_loader)
-            patch = "%06X%s%s" % (result.end(), "0001", "00")
-            hash = hashlib.sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
-            print("IPS LOADER HASH     : " + "%s" % hash)
-            print("IPS LOADER PATCH    : " + "%06X%s%s" % (result.end(), "0001", "00"))
-            text_file = open('atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
-            text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
-            text_file.close()
-            text_file = open('hekate_patches/loader_patch_%s.ini' % hash[:16], 'w')
-            text_file.write('\n')
-            text_file.write("#Loader Atmosphere-" + AMSVER + "-" + AMSHASH + "\n")
-            text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
-            hekate_bytes = fi.seek(result.end())
-            text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()-0x100) + ':0x1:' + fi.read(0x1).hex().upper() + ',00\n')
-            print("HEKATE LOADER HASH  : " + "%s" % hash[:16])
-            print("HEKATE LOADER PATCH : " + "%04X" % (result.end()-0x100) + ":0x1:" + fi.read(0x1).hex().upper() + ",00")
-            text_file.close()
-            fi.close()
-            package3.close()
-            amszip.close()
-            os.remove(glob.glob('./atmosphere-*.zip')[0])
-            os.remove("./uloader.kip1")
-            os.remove("./loader.kip1")
+        with open('loader.kip1', 'rb') as f:
+            data = f.read(0x4)
+            f = BinFile(f)
+            if data != "b'KIP1'":
+                flags = f.read_from('b', 0x1F)
+                tloc, tsize, tfilesize = f.read_from('III', 0x20)
+                rloc, rsize, rfilesize = f.read_from('III', 0x30)
+                dloc, dsize, dfilesize = f.read_from('III', 0x40)
+                toff = 0x100
+                roff = toff + tfilesize
+                doff = roff + rfilesize
+                bsssize = f.read_from('I', 0x54)
+                text = (kip1_blz_decompress(f.read_from(tfilesize, toff)), None, tloc, tsize) if flags & 1 else (f.read_from(tfilesize, toff), toff, tloc, tsize)
+                ro   = (kip1_blz_decompress(f.read_from(rfilesize, roff)), None, rloc, rsize) if flags & 2 else (f.read_from(rfilesize, roff), roff, rloc, rsize)
+                data = (kip1_blz_decompress(f.read_from(dfilesize, doff)), None, dloc, dsize) if flags & 4 else (f.read_from(dfilesize, doff), doff, dloc, dsize)
+                loader_data = text[0] + ro[0] + data[0]
+                result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', loader_data)
+                patch = "%06X%s%s" % (result.end() + 0x100, "0001", "00")
+                hash = hashlib.sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
+                print("IPS LOADER HASH     : " + "%s" % hash)
+                print("IPS LOADER PATCH    : " + "%06X%s%s" % (result.end() + 0x100, "0001", "00"))
+                text_file = open('atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
+                text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
+                text_file.close()
+                text_file = open('hekate_patches/loader_patch_%s.ini' % hash[:16], 'w')
+                text_file.write('\n')
+                text_file.write("#Loader Atmosphere-" + AMSVER + "-" + AMSHASH + "\n")
+                text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
+                hekate_bytes = f.seek(result.end())
+                text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()) + ':0x1:01,00\n')
+                print("HEKATE LOADER HASH  : " + "%s" % hash[:16])
+                print("HEKATE LOADER PATCH : " + "%04X" % (result.end()) + ":0x1:01,00")
+                text_file.close()
+                f.close()
+                package3.close()
+                amszip.close()
+                os.remove(glob.glob('./atmosphere-*.zip')[0])
+                os.remove("./loader.kip1")
