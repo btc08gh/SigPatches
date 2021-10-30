@@ -8,7 +8,10 @@ import glob
 import time
 import hashlib
 import os
+from pathlib import Path
 
+Path("./hekate_patches").mkdir(parents=True, exist_ok=True)
+Path("./atmosphere/kip_patches/loader_patches").mkdir(parents=True, exist_ok=True)
 amszipname = unquote(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8').split('/')[-1])
 urlretrieve(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8'), amszipname)
 print(glob.glob('./atmosphere-*.zip')[0])
@@ -31,6 +34,8 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
             result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', read_loader)
             patch = "%06X%s%s" % (result.end(), "0001", "00")
             hash = hashlib.sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
+            print("IPS LOADER HASH     : " + "%s" % hash)
+            print("IPS LOADER PATCH    : " + "%06X%s%s" % (result.end(), "0001", "00"))
             text_file = open('atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
             text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
             text_file.close()
@@ -40,6 +45,8 @@ with ZipFile(glob.glob('./atmosphere-*.zip')[0], 'r') as amszip:
             text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
             hekate_bytes = fi.seek(result.end())
             text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()-0x100) + ':0x1:' + fi.read(0x1).hex().upper() + ',00\n')
+            print("HEKATE LOADER HASH  : " + "%s" % hash[:16])
+            print("HEKATE LOADER PATCH : " + "%04X" % (result.end()-0x100) + ":0x1:" + fi.read(0x1).hex().upper() + ",00")
             text_file.close()
             fi.close()
             package3.close()
