@@ -14,3 +14,4 @@ with open('uncompressed_es.nso0', 'rb') as fi:
     print("es offset and patch at: " + patch)
     text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
     text_file.close()
+    

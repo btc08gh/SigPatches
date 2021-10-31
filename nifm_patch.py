@@ -14,3 +14,4 @@ with open('uncompressed_nifm.nso0', 'rb') as fi:
     print("nifm offset and patch at: " + patch)
     text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
     text_file.close()
+    

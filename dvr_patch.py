@@ -44,3 +44,4 @@ with open('main', 'rb') as fi:
     text_file = open("atmosphere/exefs_patches/am/" + get_build_id() + ".ips", "wb")
     print("AM build-id: " + get_build_id())
     text_file.write(bytes.fromhex(str("4950533332" + patch1 + patch2 + patch3 + patch4 + patch5 + patch6 + patch7 + patch8 + patch9 + patch10 + patch11 + patch12 + "45454F46")))
+    

@@ -32,3 +32,4 @@ with open('uncompressed_exfat.kip1', 'rb') as fi1:
     hekate_bytes = fi1.seek(result2.end())
     text_file.write('.nosigchk=0:0x' + '%05X' % (result2.end()-0x100) + ':0x4:' + fi1.read(0x4).hex().upper() + ',1F2003D5\n')
     text_file.close()
+    

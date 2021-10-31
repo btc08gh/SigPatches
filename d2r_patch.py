@@ -21,3 +21,4 @@ with open('main', 'rb') as fi:
     text_file.write("[D2R Bypass Online Check]\n")
     text_file.write(cheat)
     text_file.close()
+    
