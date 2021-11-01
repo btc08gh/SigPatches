@@ -1,5 +1,6 @@
 organize/**
 bootloader/**
+patches/bootloader/**
 firmware/**
 *.zip
 *.kip1

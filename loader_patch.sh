@@ -10,21 +10,17 @@ HOS_MINORVER=$(grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR\b' Atmosphere
 HOS_MICROVER=$(grep 'define ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO\b' Atmosphere/libraries/libvapours/include/vapours/ams/ams_api_version.h | tr -s [:blank:] | cut -d' ' -f3)
 HOSVER=$HOS_MAJORVER.$HOS_MINORVER.$HOS_MICROVER
 AMSVER=$AMSMAJORVER.$AMSMINORVER.$AMSMICROVER
-sleep 3
+sleep 1
 git fetch
-sleep 3
+sleep 1
 git add hekate_patches
-sleep 3
+sleep 1
 git add atmosphere
-sleep 3
+sleep 1
 if [[ `git status --porcelain` ]]; then
   git commit -m"Loader patch for $HASH was added!"
   git push
-  sleep 5
-  mkdir bootloader && \
-  ls -1t hekate_patches/*.ini | while read fn ; do cat "$fn" >> bootloader/patches.ini; done && \
-  zip -r patches.zip ./atmosphere ./bootloader -x './atmosphere/contents/*' -x './atmosphere/exefs_patches/am/*' && \
-  rm -rf bootloader
+  sleep 1
   res=`curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://api.github.com/repos/borntohonk/patches/releases \
   -d "
   {

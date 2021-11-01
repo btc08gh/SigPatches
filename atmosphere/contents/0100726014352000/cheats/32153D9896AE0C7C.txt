@@ -1,3 +1,0 @@
-{@borntohonk}
-[D2R Bypass Online Check]
-04000000 001B9070 D503201F

@@ -1,4 +1,4 @@
-import re, time, os, sys
+import re, time, os, sys, shutil
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import unquote
@@ -97,7 +97,8 @@ def kip1_blz_decompress(compressed):
     return list_to_bytes(decompressed)
     
 Path("./hekate_patches").mkdir(parents=True, exist_ok=True)
-Path("./atmosphere/kip_patches/loader_patches").mkdir(parents=True, exist_ok=True)
+Path("./patches/atmosphere/kip_patches/loader_patches").mkdir(parents=True, exist_ok=True)
+Path("./patches/bootloader").mkdir(parents=True, exist_ok=True)
 amszipname = unquote(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8').split('/')[-1])
 urlretrieve(urlopen('https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases').read().split(b'browser_download_url')[1].split(b'\"')[2].decode('utf-8'), amszipname)
 print(glob('./atmosphere-*.zip')[0])
@@ -134,7 +135,7 @@ with ZipFile(glob('./atmosphere-*.zip')[0], 'r') as amszip:
                 hash = sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
                 print("IPS LOADER HASH     : " + "%s" % hash)
                 print("IPS LOADER PATCH    : " + patch)
-                text_file = open('atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
+                text_file = open('patches/atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
                 text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
                 text_file.close()
                 text_file = open('hekate_patches/loader_patch_%s.ini' % hash[:16], 'w')
@@ -150,3 +151,8 @@ with ZipFile(glob('./atmosphere-*.zip')[0], 'r') as amszip:
                 amszip.close()
                 os.remove(glob('./atmosphere-*.zip')[0])
                 os.remove("./loader.kip1")
+                with open("./patches/bootloader/patches.ini", 'wb') as outfile:
+                    for filename in glob('./hekate_patches/*.ini'):
+                        with open(filename, 'rb') as readfile:
+                            shutil.copyfileobj(readfile, outfile)
+                shutil.make_archive("patches", "zip", "patches")
