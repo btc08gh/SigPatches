@@ -15,7 +15,7 @@ git fetch
 sleep 1
 git add hekate_patches
 sleep 1
-git add atmosphere
+git add patches/atmosphere
 sleep 1
 if [[ `git status --porcelain` ]]; then
   git commit -m"Loader patch for $HASH was added!"
