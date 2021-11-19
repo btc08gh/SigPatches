@@ -8,7 +8,7 @@ This repository contains "signature patch" bundle releases, and tutorials on how
 
 * Various Guides and scripts to make patches:
   - [Python script to generate nifm patches, usage: place uncompressed nifm as "main" in the same folder then use "python3 nifm_patch.py" (pattern applicable for 12.0.0 and up)](nifm_patch.py)
-  - [Guide describing how to patch out the online check in Diablo 2 Resurrected - TitleID 0100726014352000/0100726014352800. for v65536-v393216+++](D2R-0100726014352800.md)
+  - [Guide describing how to patch out the online check in Diablo 2 Resurrected - TitleID 0100726014352000/0100726014352800. for v65536-v458752+++](D2R-0100726014352800.md)
   - [Python script to generate D2R patches, usage: place uncompressed D2R as "main" in the same folder then use "python3 d2r_patch.py"](d2r_patch.py)
   - [Guide describing how to patch FS, - TitleID 0100000000000819/010000000000081B.](FS-010000000000081B-0100000000000819.md)
   - [Python script to generate FS patches, usage: place uncompressed_exfat.kip1, compressed_exfat.kip1 and compressed_fat32.kip1 in the same folder then use "python3 fs_patch.py"](fs_patch.py)
