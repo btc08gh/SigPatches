@@ -15,13 +15,13 @@ git fetch
 sleep 1
 git add hekate_patches
 sleep 1
-git add patches/atmosphere
+git add SigPatches/atmosphere
 sleep 1
 if [[ `git status --porcelain` ]]; then
   git commit -m"Loader patch for $HASH was added!"
   git push
   sleep 1
-  res=`curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://api.github.com/repos/borntohonk/patches/releases \
+  res=`curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://api.github.com/repos/borntohonk/SigPatches/releases \
   -d "
   {
       \"tag_name\": \"$HOSVER-$AMSVER-$HASH\",
@@ -33,7 +33,7 @@ if [[ `git status --porcelain` ]]; then
   }"`
   echo Create release result: ${res}
   rel_id=`echo ${res} | python -c 'import json,sys;print(json.load(sys.stdin, strict=False)["id"])'`
-  curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://uploads.github.com/repos/borntohonk/patches/releases/${rel_id}/assets?name=patches.zip --header 'Content-Type: application/zip ' --upload-file patches.zip
+  curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://uploads.github.com/repos/borntohonk/SigPatches/releases/${rel_id}/assets?name=patches.zip --header 'Content-Type: application/zip ' --upload-file SigPatches.zip
 else
   echo "No new patches were generated"
 fi

@@ -1,10 +1,10 @@
 organize/**
 bootloader/**
-patches/bootloader/**
+SigPatches/bootloader/**
 firmware/**
 *.zip
 *.kip1
 *.nso0
 ams.hash
 Atmosphere/**
-patches.zip
+SigPatches.zip
