@@ -15,4 +15,4 @@ This guide is done on Windows 10, and assumes you have some sort of git shell in
 11. Navigate to your Ghidra-Switch-Loader folder and then into the "dist" folder it made, then select the .zip that should be in there.
 12. restart ghidra
 
-![alt text](https://github.com/borntohonk/patches/blob/master/img/ghidra-w.png?raw=true)
+![alt text](https://github.com/borntohonk/SigPatches/blob/master/img/ghidra-w.png?raw=true)

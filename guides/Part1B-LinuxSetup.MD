@@ -2,7 +2,7 @@ Part 1B: Setting up Ghidra
 
 This guide is done on Ubuntu, and assumes you have git, wget and curl. They can be gotten by doing "sudo apt-get install -y wget curl git"
 
-0. (optional) put this into your terminal "curl -sSL https://github.com/borntohonk/patches/raw/master/setup_ghidra.sh | sh"
+0. (optional) put this into your terminal "curl -sSL https://github.com/borntohonk/SigPatches/raw/master/scripts/setup_ghidra.sh | sh"
 1. or put this into your terminal: 
 
 ```

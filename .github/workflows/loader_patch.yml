@@ -13,15 +13,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Make Loader patch
-        run: python3 loader_patch.py
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          repository: Atmosphere-NX/Atmosphere
-          path: Atmosphere
+        run: python3 scripts/loader_patch.py
 
       - name: Add Loader patch to git
-        run: bash loader_patch.sh >/dev/null 2>&1
+        run: bash scripts/loader_patch.sh >/dev/null 2>&1
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
