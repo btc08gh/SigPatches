@@ -4,7 +4,7 @@ This repository contains "signature patch" bundle releases, and tutorials on how
   - [Part 1A detailing how to set up ghidra and the switch loader for windows](guides/Part1A-WindowsSetup.MD)
   - [Part 1B detailing how to set up ghidra and the switch loader for linux](guides/Part1B-LinuxSetup.MD)
   - [Part 2 detailing how to to use ghidra to from ground up make a patch for nifm.](guides/Part2.MD)
-  - [Python script to process dumped FW files from system partition and organize then output binaries of interest, Usage: create a folder called "firmware", put firmware .ncas inside of the "firmware" folder then use "python firmware_organizer.py."](guides/firmware_organizer.py)
+  - [Python script to process dumped FW files from system partition and organize then output binaries of interest, Usage: create a folder called "firmware", put firmware .ncas inside of the "firmware" folder then use "python firmware_organizer.py."](scripts/firmware_organizer.py)
 
 * Various Guides and scripts to make patches:
   - [Python script to generate nifm patches, usage: place uncompressed nifm as "main" in the same folder then use "python3 nifm_patch.py" (pattern applicable for 12.0.0 and up)](scripts/nifm_patch.py)

@@ -163,8 +163,8 @@ for version in os.listdir("."):
     nifmuncompressed = version + "/uncompressed_nifm.nso0"
     exfatuncompressed = version + "/uncompressed_exfat.kip1"
     fat32uncompressed = version + "/uncompressed_fat32.kip1"
-    fat32compressed = version + "/compressed_exfat.kip1"
-    exfatcompressed = version + "/compressed_fat32.kip1"
+    exfatcompressed = version + "/compressed_exfat.kip1"
+    fat32compressed = version + "/compressed_fat32.kip1"
 
     with open(esuncompressed, 'rb') as fi:
         read_data = fi.read()
