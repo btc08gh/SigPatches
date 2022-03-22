@@ -1,5 +1,8 @@
 This repository contains "signature patch" bundle releases, and tutorials on how to make them, aswell as scripts to automate/simplify the process to make them.
 
+14.0.0 firmware revision note:
+A lot of things changed in ES, FS, NIFM for 14.0.0, most notably, you now need to generate separate fs patches.
+
 * Ghidra/Patch making tutorial:
   - [Part 1A detailing how to set up ghidra and the switch loader for windows](guides/Part1A-WindowsSetup.MD)
   - [Part 1B detailing how to set up ghidra and the switch loader for linux](guides/Part1B-LinuxSetup.MD)

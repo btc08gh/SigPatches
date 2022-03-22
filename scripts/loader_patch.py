@@ -42,7 +42,7 @@ with ZipFile(glob('./atmosphere-*.zip')[0], 'r') as amszip:
             text_file = open('SigPatches/atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
             text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
             text_file.close()
-            text_file = open('hekate_patches/loader_patch_%s.ini' % hash[:16], 'w')
+            text_file = open('hekate_patches/loader_patch_' + AMSVER + '_%s.ini' % hash[:16], 'w')
             text_file.write('\n')
             text_file.write("#Loader Atmosphere-" + AMSVER + "-" + AMSHASH + "\n")
             text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
