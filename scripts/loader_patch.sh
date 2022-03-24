@@ -24,20 +24,16 @@ if [[ `git status --porcelain` ]]; then
   git commit -m"Loader patch for $HASH was added!"
   git push
   sleep 1
-  res=`curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://api.github.com/repos/borntohonk/SigPatches/releases \
-  -d "
-  {
-      \"tag_name\": \"$HOSVER-$AMSVER-$HASH\",
-      \"target_commitish\": \"master\",
-      \"name\": \"Supports HOS firmware $HOSVER and AMS $AMSVER-$HASH\",
-      \"body\": \"- es, fs and nifm patches for HOS ${HOSVER} are included. \r\n\r\n- has loader patches for Atmosphere version ${AMSVER}-${HASH} \r\n\r\n- Hekate style patches are included for both loader and FS \",
-      \"draft\": false,
-      \"prerelease\": false
-  }"`
-  echo Create release result: ${res}
-  rel_id=`echo ${res} | python -c 'import json,sys;print(json.load(sys.stdin, strict=False)["id"])'`
-  curl --user "borntohonk:$GITHUB_TOKEN" -X POST https://uploads.github.com/repos/borntohonk/SigPatches/releases/${rel_id}/assets?name=SigPatches.zip --header 'Content-Type: application/zip ' --upload-file SigPatches.zip
+  echo NeutOS $AMSVER-$AMSHASH for FW version $HOSVER > changelog.md
+  echo "" >> changelog.md
+  echo - Supports HOS firmware $HOSVER and AMS $AMSVER-$HASH >> changelog.md
+  echo "" >> changelog.md
+  echo - has loader patches for Atmosphere version ${AMSVER}-${HASH} >> changelog.md
+  echo "" >> changelog.md
+  echo "- Hekate style patches are included for both loader and FS" >> changelog.md
+  echo "" >> changelog.md
   sleep 5
+  echo gh release create $HOSVER-$AMSVER-$HASH -F changelog.md SigPatches.zip --repo github.com/borntohonk/SigPatches
   rm -rf Atmosphere
 else
   echo "No new patches were generated"
