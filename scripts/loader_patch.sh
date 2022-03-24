@@ -24,16 +24,15 @@ if [[ `git status --porcelain` ]]; then
   git commit -m"Loader patch for $HASH was added!"
   git push
   sleep 1
-  echo NeutOS $AMSVER-$AMSHASH for FW version $HOSVER > changelog.md
   echo "" >> changelog.md
-  echo - Supports HOS firmware $HOSVER and AMS $AMSVER-$HASH >> changelog.md
+  echo "- es, fs and nifm patches for HOS ${HOSVER} are included" >> changelog.md
   echo "" >> changelog.md
-  echo - has loader patches for Atmosphere version ${AMSVER}-${HASH} >> changelog.md
+  echo "- has loader patches for Atmosphere version ${AMSVER}-${HASH}" >> changelog.md
   echo "" >> changelog.md
   echo "- Hekate style patches are included for both loader and FS" >> changelog.md
   echo "" >> changelog.md
   sleep 5
-  echo gh release create $HOSVER-$AMSVER-$HASH -F changelog.md SigPatches.zip --repo github.com/borntohonk/SigPatches
+  gh release create $HOSVER-$AMSVER-$HASH -F changelog.md SigPatches.zip --title "Supports HOS firmware $HOSVER and AMS $AMSVER-$HASH" --repo github.com/borntohonk/SigPatches
   rm -rf Atmosphere
 else
   echo "No new patches were generated"
