@@ -6,5 +6,6 @@ firmware/**
 *.kip1
 *.nso0
 ams.hash
+Atmosphere/
 Atmosphere/**
-SigPatches.zip
+changelog.md
