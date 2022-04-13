@@ -1,7 +1,7 @@
 #!/bin/bash
 git config --global user.name 'borntohonk' && \
 git config --global user.email '6264306+borntohonk@users.noreply.github.com' && \
-HASH=$(curl --silent "https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases" | grep "browser_download_url" | head -1 | grep -oE "\-([0-9a-f]{8})" | cut -c2-)
+HASH=$(curl --silent "https://api.github.com/repos/Atmosphere-NX/Atmosphere/releases" | grep "browser_download_url" | head -1 | grep -oE "\-([0-9a-f]{9})" | cut -c2-)
 git clone https://github.com/Atmosphere-NX/Atmosphere.git ../Atmosphere && \
 sleep 5 && \
 git -C ../Atmosphere checkout $HASH && \
