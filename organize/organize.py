@@ -8,6 +8,7 @@ import shutil
 import errno
 import hashlib
 import re
+from glob import glob
 from pathlib import Path
 
 def get_es_build_id():
@@ -166,32 +167,41 @@ for version in os.listdir("."):
     exfatcompressed = version + "/compressed_exfat.kip1"
     fat32compressed = version + "/compressed_fat32.kip1"
 
-    with open(esuncompressed, 'rb') as esf:
-        read_data = esf.read()
-    result = re.search(b'.\x63\x00.{3}\x00\x94\xa0.{2}\xd1.{2}\xff\x97', read_data)
-    patch = "%06X%s%s" % (result.end(), "0004", "E0031FAA")
-    text_file = open("../SigPatches/atmosphere/exefs_patches/es_patches/" + get_es_build_id() + ".ips", "wb")
-    print("es build-id: " + get_es_build_id())
-    print("es offset and patch at: " + patch)
-    text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
-    text_file.close()
-    esf.close()
 
-    with open(nifmuncompressed, 'rb') as nifmf:
-        read_data = nifmf.read()
-    result = re.search(b'.{16}\xf5\x03\x01\xaa\xf4\x03\x00\xaa.{4}\xf3\x03\x14\xaa\xe0\x03\x14\xaa\x9f\x02\x01\x39\x7f\x8e\x04\xf8', read_data)
-    text_file = open("../SigPatches/atmosphere/exefs_patches/nifm_ctest/" + get_nifm_build_id() + ".ips", "wb")
-    patch = "%06X%s%s" % (result.start(), "0008", "E0031FAAC0035FD6")
-    print("nifm build-id: " + get_nifm_build_id())
-    print("nifm offset and patch at: " + patch)
-    text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
-    text_file.close()
-    nifmf.close()
+    es_patch = '../SigPatches/atmosphere/exefs_patches/es_patches/' + get_es_build_id() + '.ips'
+    if es_patch in glob('../SigPatches/atmosphere/exefs_patches/es_patches/*.ips'):
+        print("An es patch for version " +  version + " already exists as an .ips patch, and the build id is: " + get_es_build_id())
+    else:
+        with open(esuncompressed, 'rb') as esf:
+            read_data = esf.read()
+            result = re.search(b'.\x63\x00.{3}\x00\x94\xa0.{2}\xd1.{2}\xff\x97', read_data)
+            patch = "%06X%s%s" % (result.end(), "0004", "E0031FAA")
+            text_file = open("../SigPatches/atmosphere/exefs_patches/es_patches/" + get_es_build_id() + ".ips", "wb")
+            print("es build-id: " + get_es_build_id())
+            print("es offset and patch at: " + patch)
+            text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
+            text_file.close()
+        esf.close()
+
+    nifm_patch = '../SigPatches/atmosphere/exefs_patches/nifm_ctest/' + get_nifm_build_id() + '.ips'
+    if nifm_patch in glob('../SigPatches/atmosphere/exefs_patches/nifm_ctest/*.ips'):
+        print("A ctest patch for version " +  version + " already exists as an .ips patch, and the build id is: " + get_nifm_build_id())
+    else:
+        with open(nifmuncompressed, 'rb') as nifmf:
+            read_data = nifmf.read()
+            result = re.search(b'.{16}\xf5\x03\x01\xaa\xf4\x03\x00\xaa.{4}\xf3\x03\x14\xaa\xe0\x03\x14\xaa\x9f\x02\x01\x39\x7f\x8e\x04\xf8', read_data)
+            text_file = open("../SigPatches/atmosphere/exefs_patches/nifm_ctest/" + get_nifm_build_id() + ".ips", "wb")
+            patch = "%06X%s%s" % (result.start(), "0008", "E0031FAAC0035FD6")
+            print("nifm build-id: " + get_nifm_build_id())
+            print("nifm offset and patch at: " + patch)
+            text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
+            text_file.close()
+        nifmf.close()
      
     fat32hash = hashlib.sha256(open(fat32compressed, 'rb').read()).hexdigest().upper()
     with open('../hekate_patches/fs_patches.ini') as fs_patches:
         if fat32hash[:16] in fs_patches.read():
-            print("A patch for this version of fat32 fs patches already exists in fs_patches.ini")
+            print("A patch for version " + version + " of fat32 fs patches already exists in fs_patches.ini and as an .ips patch, with the short hash of: " + fat32hash[:16])
         else:
             with open(fat32uncompressed, 'rb') as fat32f:
                 read_data = fat32f.read()
@@ -221,7 +231,7 @@ for version in os.listdir("."):
     exfathash = hashlib.sha256(open(exfatcompressed, 'rb').read()).hexdigest().upper()
     with open('../hekate_patches/fs_patches.ini') as fs_patches:
         if exfathash[:16] in fs_patches.read():
-            print("A patch for this version of exfat fs patches already exists in fs_patches.ini")
+            print("A patch for version " + version + " of exfat fs patches already exists in fs_patches.ini and as an .ips patch, with the short hash of: " + exfathash[:16])
         else:
             with open(exfatuncompressed, 'rb') as exfatf:
                 read_data = exfatf.read()
