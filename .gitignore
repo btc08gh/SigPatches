@@ -9,3 +9,4 @@ ams.hash
 Atmosphere/
 Atmosphere/**
 changelog.md
+scripts/__pycache__

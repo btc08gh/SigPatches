@@ -1,4 +1,4 @@
-import re, time, os, sys, shutil, subprocess
+import re, time, os, sys, shutil, subprocess, nxo64
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import unquote
@@ -35,34 +35,35 @@ with open('./hekate_patches/loader_patches.ini') as loader_patches:
                 text_file = open('loader.kip1', 'wb')
                 text_file.write(loader_kip)
                 text_file.close()
-                process = subprocess.Popen(["hactool", "--intype=kip1", "--uncompressed=uloader.kip1", "loader.kip1"], stdout=subprocess.DEVNULL)
-                time.sleep(5)
-                with open('uloader.kip1', 'rb') as f:
-                    loader_data = f.read()
-                    result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', loader_data)
-                    patch = "%06X%s%s" % (result.end(), "0001", "00")
-                    hash = sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
-                    print("IPS LOADER HASH     : " + "%s" % hash)
-                    print("IPS LOADER PATCH    : " + patch)
-                    text_file = open('SigPatches/atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
-                    text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
-                    text_file.close()
-                    text_file = open('./hekate_patches/loader_patches.ini', 'a')
-                    text_file.write('\n')
-                    text_file.write("#Loader Atmosphere-" + atmosphere_version + "-" + atmosphere_hash + "\n")
-                    text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
-                    text_file.write('.nosigchk=0:0x' + '%04X' % (result.end() - 0x100) + ':0x1:01,00\n')
-                    print("HEKATE LOADER HASH  : " + "%s" % hash[:16])
-                    print("HEKATE LOADER PATCH : " + "%04X" % (result.end() - 0x100) + ":0x1:01,00")
-                    text_file.close()
-                    f.close()
-                    package3.close()
-                    amszip.close()
-                    os.remove("./uloader.kip1")
-                    os.remove("./loader.kip1")
-                    os.remove(atmosphere_zip)
-                    with open('./SigPatches/bootloader/patches.ini','wb') as outfile:
-                        for filename in ['./hekate_patches/header.ini','./hekate_patches/fs_patches.ini','./hekate_patches/loader_patches.ini']:
-                            with open(filename,'rb') as readfile:
-                                shutil.copyfileobj(readfile, outfile)
-                    shutil.make_archive("SigPatches", "zip", "SigPatches")
+                with open ('loader.kip1', 'rb') as compressed_loader_kip:
+                    nxo64.write_file(f"uloader.kip1", nxo64.decompress_kip(compressed_loader_kip))
+                    time.sleep(5)
+                    with open('uloader.kip1', 'rb') as decompressed_loader_kip:
+                        loader_data = decompressed_loader_kip.read()
+                        result = re.search(b'\x00\x94\x01\xC0\xBE\x12\x1F\x00', loader_data)
+                        patch = "%06X%s%s" % (result.end() + 0x100, "0001", "00")
+                        hash = sha256(open('loader.kip1', 'rb').read()).hexdigest().upper()
+                        print("IPS LOADER HASH     : " + "%s" % hash)
+                        print("IPS LOADER PATCH    : " + patch)
+                        text_file = open('SigPatches/atmosphere/kip_patches/loader_patches/%s.ips' % hash, 'wb')
+                        text_file.write(bytes.fromhex(str("5041544348" + patch + "454F46")))
+                        text_file.close()
+                        text_file = open('./hekate_patches/loader_patches.ini', 'a')
+                        text_file.write('\n')
+                        text_file.write("#Loader Atmosphere-" + atmosphere_version + "-" + atmosphere_hash + "\n")
+                        text_file.write("[Loader:" + '%s' % hash[:16] + "]\n")
+                        text_file.write('.nosigchk=0:0x' + '%04X' % (result.end()) + ':0x1:01,00\n')
+                        print("HEKATE LOADER HASH  : " + "%s" % hash[:16])
+                        print("HEKATE LOADER PATCH : " + "%04X" % (result.end()) + ":0x1:01,00")
+                        text_file.close()
+                        decompressed_loader_kip.close()
+                        package3.close()
+                        amszip.close()
+                        compressed_loader_kip.close()
+                        os.remove("./uloader.kip1")
+                        os.remove("./loader.kip1")
+                        with open('./SigPatches/bootloader/patches.ini','wb') as outfile:
+                            for filename in ['./hekate_patches/header.ini','./hekate_patches/fs_patches.ini','./hekate_patches/loader_patches.ini']:
+                                with open(filename,'rb') as readfile:
+                                    shutil.copyfileobj(readfile, outfile)
+                        shutil.make_archive("SigPatches", "zip", "SigPatches")
