@@ -43,8 +43,6 @@ def kip1_blz_decompress(compressed):
 		compressed = compressed[len(compressed) - compressed_size:]
 	if not (compressed_size + uncompressed_addl_size):
 		return b''
-	# compressed = map(ord, compressed)
-	# decompressed = map(ord, decompressed)
 	index = compressed_size - init_index
 	outindex = decompressed_size
 	while outindex > 0:
@@ -52,24 +50,16 @@ def kip1_blz_decompress(compressed):
 		control = compressed[index]
 		for i in range(8):
 			if control & 0x80:
-				if index < 2:
-					print(ValueError('INFO: Compression out of bounds! (benign error)'))
 				index -= 2
 				segmentoffset = compressed[index] | (compressed[index + 1] << 8)
 				segmentsize = ((segmentoffset >> 12) & 0xF) + 3
 				segmentoffset &= 0x0FFF
 				segmentoffset += 2
-				if outindex < segmentsize:
-					print(ValueError('INFO: Compression out of bounds! (benign error)'))
 				for j in range(segmentsize):
-					if outindex + segmentoffset >= decompressed_size:
-						print(ValueError('INFO: Compression out of bounds!'))
 					data = decompressed[outindex + segmentoffset]
 					outindex -= 1
 					decompressed[outindex] = data
 			else:
-				if outindex < 1:
-					print(ValueError('INFO: Compression out of bounds!'))
 				outindex -= 1
 				index -= 1
 				decompressed[outindex] = compressed[index]
@@ -127,17 +117,19 @@ def decompress_kip(fileobj):
 	rloc, rsize, rfilesize = f.read_from('3I', 0x30)
 	dloc, dsize, dfilesize = f.read_from('3I', 0x40)
 
+	hoff = 0x00
+	hfilesize = 0x100
 	toff = 0x100
 	roff = toff + tfilesize
 	doff = roff + rfilesize
 
-	bsssize = f.read_from('I', 0x18)
-
+	header = f.read_from(hfilesize, hoff)
 	text = kip1_blz_decompress(f.read_from(tfilesize, toff))
 	ro = kip1_blz_decompress(f.read_from(rfilesize, roff))
 	data = kip1_blz_decompress(f.read_from(dfilesize, doff))
 
-	full = text
+	full = header
+	full += text
 	if rloc >= len(full):
 		full += b'\0' * (rloc - len(full))
 	else:
