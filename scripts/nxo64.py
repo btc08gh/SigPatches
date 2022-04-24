@@ -18,167 +18,166 @@
 # OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
-from struct import unpack, unpack_from, calcsize
+from struct import calcsize, unpack, unpack_from
+from typing import Union
 
 # pip install lz4
 import lz4.block
 
 uncompress = lz4.block.decompress
 
-def read_file(filename: str) -> bytes:
-	with open(filename, "rb") as f:
-		data = f.read()
-	return data
 
-def write_file(filename: str, data: (bytes, bytearray)) -> None:
-	with open(filename, "wb") as f:
-		f.write(data)
+def read_file(filename: str) -> bytes:
+    with open(filename, "rb") as f:
+        data = f.read()
+    return data
+
+
+def write_file(filename: str, data: Union[bytes, bytearray]) -> None:
+    with open(filename, "wb") as f:
+        f.write(data)
+
 
 def kip1_blz_decompress(compressed):
-	(compressed_size, init_index, uncompressed_addl_size) = unpack_from('<3I', compressed, -0xC)
-	decompressed = bytearray(compressed[:] + b'\x00' * uncompressed_addl_size)
-	decompressed_size = len(decompressed)
-	if len(compressed) != compressed_size:
-		assert len(compressed) > compressed_size
-		compressed = compressed[len(compressed) - compressed_size:]
-	if not (compressed_size + uncompressed_addl_size):
-		return b''
-	# compressed = map(ord, compressed)
-	# decompressed = map(ord, decompressed)
-	index = compressed_size - init_index
-	outindex = decompressed_size
-	while outindex > 0:
-		index -= 1
-		control = compressed[index]
-		for i in range(8):
-			if control & 0x80:
-				if index < 2:
-					print(ValueError('INFO: Compression out of bounds! (benign error)'))
-				index -= 2
-				segmentoffset = compressed[index] | (compressed[index + 1] << 8)
-				segmentsize = ((segmentoffset >> 12) & 0xF) + 3
-				segmentoffset &= 0x0FFF
-				segmentoffset += 2
-				if outindex < segmentsize:
-					print(ValueError('INFO: Compression out of bounds! (benign error)'))
-				for j in range(segmentsize):
-					if outindex + segmentoffset >= decompressed_size:
-						print(ValueError('INFO: Compression out of bounds!'))
-					data = decompressed[outindex + segmentoffset]
-					outindex -= 1
-					decompressed[outindex] = data
-			else:
-				if outindex < 1:
-					print(ValueError('INFO: Compression out of bounds!'))
-				outindex -= 1
-				index -= 1
-				decompressed[outindex] = compressed[index]
-			control <<= 1
-			control &= 0xFF
-			if not outindex:
-				break
-	return decompressed
+    (compressed_size, init_index, uncompressed_addl_size) = unpack_from(
+        '<3I', compressed, -0xC)
+    decompressed = bytearray(compressed[:] + b'\x00' * uncompressed_addl_size)
+    decompressed_size = len(decompressed)
+    if len(compressed) != compressed_size:
+        assert len(compressed) > compressed_size
+        compressed = compressed[len(compressed) - compressed_size:]
+    if not (compressed_size + uncompressed_addl_size):
+        return b''
+    index = compressed_size - init_index
+    outindex = decompressed_size
+    while outindex > 0:
+        index -= 1
+        control = compressed[index]
+        for i in range(8):
+            if control & 0x80:
+                index -= 2
+                segmentoffset = compressed[index] | (
+                    compressed[index + 1] << 8)
+                segmentsize = ((segmentoffset >> 12) & 0xF) + 3
+                segmentoffset &= 0x0FFF
+                segmentoffset += 2
+                for j in range(segmentsize):
+                    data = decompressed[outindex + segmentoffset]
+                    outindex -= 1
+                    decompressed[outindex] = data
+            else:
+                outindex -= 1
+                index -= 1
+                decompressed[outindex] = compressed[index]
+            control <<= 1
+            control &= 0xFF
+            if not outindex:
+                break
+    return decompressed
+
 
 class BinFile(object):
-	def __init__(self, li):
-		self._f = li
+    def __init__(self, li):
+        self._f = li
 
-	def read(self, arg):
-		if isinstance(arg, str):
-			fmt = '<' + arg
-			size = calcsize(fmt)
-			raw = self._f.read(size)
-			out = unpack(fmt, raw)
-			if len(out) == 1:
-				return out[0]
-			return out
-		elif arg is None:
-			return self._f.read()
-		else:
-			out = self._f.read(arg)
-			return out
+    def read(self, arg):
+        if isinstance(arg, str):
+            fmt = '<' + arg
+            size = calcsize(fmt)
+            raw = self._f.read(size)
+            out = unpack(fmt, raw)
+            if len(out) == 1:
+                return out[0]
+            return out
+        elif arg is None:
+            return self._f.read()
+        else:
+            out = self._f.read(arg)
+            return out
 
-	def read_from(self, arg, offset):
-		old = self.tell()
-		try:
-			self.seek(offset)
-			out = self.read(arg)
-		finally:
-			self.seek(old)
-		return out
+    def read_from(self, arg, offset):
+        old = self.tell()
+        try:
+            self.seek(offset)
+            out = self.read(arg)
+        finally:
+            self.seek(old)
+        return out
 
-	def seek(self, off):
-		self._f.seek(off)
+    def seek(self, off):
+        self._f.seek(off)
 
-	def close(self):
-		self._f.close()
+    def close(self):
+        self._f.close()
 
-	def tell(self):
-		return self._f.tell()
+    def tell(self):
+        return self._f.tell()
 
 
 def decompress_kip(fileobj):
-	f = BinFile(fileobj)
+    f = BinFile(fileobj)
 
-	if f.read_from('4s', 0) != b"KIP1":
-		raise Exception('Invalid KIP magic')
+    if f.read_from('4s', 0) != b"KIP1":
+        raise Exception('Invalid KIP magic')
 
-	tloc, tsize, tfilesize = f.read_from('3I', 0x20)
-	rloc, rsize, rfilesize = f.read_from('3I', 0x30)
-	dloc, dsize, dfilesize = f.read_from('3I', 0x40)
+    tloc, tsize, tfilesize = f.read_from('3I', 0x20)
+    rloc, rsize, rfilesize = f.read_from('3I', 0x30)
+    dloc, dsize, dfilesize = f.read_from('3I', 0x40)
 
-	toff = 0x100
-	roff = toff + tfilesize
-	doff = roff + rfilesize
+    hoff = 0x00
+    hfilesize = 0x100
+    toff = 0x100
+    roff = toff + tfilesize
+    doff = roff + rfilesize
 
-	bsssize = f.read_from('I', 0x18)
+    header = f.read_from(hfilesize, hoff)
+    text = kip1_blz_decompress(f.read_from(tfilesize, toff))
+    ro = kip1_blz_decompress(f.read_from(rfilesize, roff))
+    data = kip1_blz_decompress(f.read_from(dfilesize, doff))
 
-	text = kip1_blz_decompress(f.read_from(tfilesize, toff))
-	ro = kip1_blz_decompress(f.read_from(rfilesize, roff))
-	data = kip1_blz_decompress(f.read_from(dfilesize, doff))
+    full = header
+    full += text
+    if rloc >= len(full):
+        full += b'\0' * (rloc - len(full))
+    else:
+        full = full[:rloc]
+    full += ro
+    if dloc >= len(full):
+        full += b'\0' * (dloc - len(full))
+    else:
+        full = full[:dloc]
+    full += data
 
-	full = text
-	if rloc >= len(full):
-		full += b'\0' * (rloc - len(full))
-	else:
-		full = full[:rloc]
-	full += ro
-	if dloc >= len(full):
-		full += b'\0' * (dloc - len(full))
-	else:
-		full = full[:dloc]
-	full += data
-
-	return full
+    return full
 
 
 def decompress_nso(fileobj):
-	f = BinFile(fileobj)
+    f = BinFile(fileobj)
 
-	if f.read_from('4s', 0) != b"NSO0":
-		raise Exception('Invalid NSO magic')
+    if f.read_from('4s', 0) != b"NSO0":
+        raise Exception('Invalid NSO magic')
 
-	toff, tloc, tsize = f.read_from('3I', 0x10)
-	roff, rloc, rsize = f.read_from('3I', 0x20)
-	doff, dloc, dsize = f.read_from('3I', 0x30)
+    toff, tloc, tsize = f.read_from('3I', 0x10)
+    roff, rloc, rsize = f.read_from('3I', 0x20)
+    doff, dloc, dsize = f.read_from('3I', 0x30)
 
-	tfilesize, rfilesize, dfilesize = f.read_from('3I', 0x60)
-	bsssize = f.read_from('I', 0x3C)
+    tfilesize, rfilesize, dfilesize = f.read_from('3I', 0x60)
+    bsssize = f.read_from('I', 0x3C)
 
-	text = uncompress(f.read_from(tfilesize, toff), uncompressed_size=tsize)
-	ro = uncompress(f.read_from(rfilesize, roff), uncompressed_size=rsize)
-	data = uncompress(f.read_from(dfilesize, doff), uncompressed_size=dsize)
+    text = uncompress(f.read_from(tfilesize, toff), uncompressed_size=tsize)
+    ro = uncompress(f.read_from(rfilesize, roff), uncompressed_size=rsize)
+    data = uncompress(f.read_from(dfilesize, doff), uncompressed_size=dsize)
 
-	full = text
-	if rloc >= len(full):
-		full += b'\0' * (rloc - len(full))
-	else:
-		full = full[:rloc]
-	full += ro
-	if dloc >= len(full):
-		full += b'\0' * (dloc - len(full))
-	else:
-		full = full[:dloc]
-	full += data
+    full = text
+    if rloc >= len(full):
+        full += b'\0' * (rloc - len(full))
+    else:
+        full = full[:rloc]
+    full += ro
+    if dloc >= len(full):
+        full += b'\0' * (dloc - len(full))
+    else:
+        full = full[:dloc]
+    full += data
 
-	return full
+    return full
