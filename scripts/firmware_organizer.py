@@ -21,6 +21,12 @@ def get_nifm_build_id():
         return(f.read(0x14).hex().upper())
 
 
+def get_usb_build_id():
+    with open("uncompressed_usb.nso0", "rb") as f:
+        f.seek(0x40)
+        return(f.read(0x14).hex().upper())
+
+
 def mkdirp(path):
     try:
         os.makedirs(path)
@@ -129,6 +135,18 @@ process = subprocess.Popen(
     ["hactool", "--intype=nso0", "--uncompressed=uncompressed_nifm.nso0", ncaFull], stdout=subprocess.DEVNULL)
 process.wait()
 
+print("# Extracting USB")
+nifmFull = "firmware" + "/"
+ncaParent = "firmware" + "/titleid/0100000000000006"
+ncaPartial = ncaParent + "/Program.nca"
+ncaFull = "firmware" + "/titleid/0100000000000006/exefs/main"
+process = subprocess.Popen(["hactool", "--intype=nca", "--exefsdir=" + "firmware" + "/titleid/0100000000000006/exefs/",
+                           "firmware" + "/titleid/0100000000000006/Program.nca"], stdout=subprocess.DEVNULL)
+process.wait()
+process = subprocess.Popen(
+    ["hactool", "--intype=nso0", "--uncompressed=uncompressed_usb.nso0", ncaFull], stdout=subprocess.DEVNULL)
+process.wait()
+
 print("# Extracting fat32")
 ncaParent = "firmware" + "/titleid/0100000000000819"
 pk21dir = ncaParent + "/romfs/nx/package2"
@@ -168,11 +186,13 @@ process = shutil.copyfile(exfatCompressed, fsCopy)
 print(f"===== Printing relevant hashes and buildids =====")
 esuncompressed = "uncompressed_es.nso0"
 nifmuncompressed = "uncompressed_nifm.nso0"
+usbuncompressed = "uncompressed_usb.nso0"
 fat32compressed = "compressed_exfat.kip1"
 exfatcompressed = "compressed_fat32.kip1"
 
 print("es build-id: " + get_es_build_id())
 print("nifm build-id: " + get_nifm_build_id())
+print("usb build-id: " + get_usb_build_id())
 exfathash = hashlib.sha256(
     open(exfatcompressed, 'rb').read()).hexdigest().upper()
 print("exfat sha256: " + exfathash)
