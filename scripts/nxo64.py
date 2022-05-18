@@ -26,21 +26,17 @@ import lz4.block
 
 uncompress = lz4.block.decompress
 
-
 def read_file(filename: str) -> bytes:
-    with open(filename, "rb") as f:
+    with open(filename, 'rb') as f:
         data = f.read()
     return data
 
-
 def write_file(filename: str, data: Union[bytes, bytearray]) -> None:
-    with open(filename, "wb") as f:
+    with open(filename, 'wb') as f:
         f.write(data)
 
-
 def kip1_blz_decompress(compressed):
-    (compressed_size, init_index, uncompressed_addl_size) = unpack_from(
-        '<3I', compressed, -0xC)
+    (compressed_size, init_index, uncompressed_addl_size) = unpack_from('<3I', compressed, -0xC)
     decompressed = bytearray(compressed[:] + b'\x00' * uncompressed_addl_size)
     decompressed_size = len(decompressed)
     if len(compressed) != compressed_size:
@@ -74,7 +70,6 @@ def kip1_blz_decompress(compressed):
             if not outindex:
                 break
     return decompressed
-
 
 class BinFile(object):
     def __init__(self, li):
@@ -113,11 +108,10 @@ class BinFile(object):
     def tell(self):
         return self._f.tell()
 
-
 def decompress_kip(fileobj):
     f = BinFile(fileobj)
 
-    if f.read_from('4s', 0) != b"KIP1":
+    if f.read_from('4s', 0) != b'KIP1':
         raise Exception('Invalid KIP magic')
 
     tloc, tsize, tfilesize = f.read_from('3I', 0x20)
@@ -150,11 +144,10 @@ def decompress_kip(fileobj):
 
     return full
 
-
 def decompress_nso(fileobj):
     f = BinFile(fileobj)
 
-    if f.read_from('4s', 0) != b"NSO0":
+    if f.read_from('4s', 0) != b'NSO0':
         raise Exception('Invalid NSO magic')
 
     toff, tloc, tsize = f.read_from('3I', 0x10)

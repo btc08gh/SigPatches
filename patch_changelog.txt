@@ -1,0 +1,24 @@
+Patch changelog for 14.0.0:
+
+USB related patch changelog for 14.0.0:
+    { 0x7414, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { 0x74A4, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { ParseModuleID("1C97AFF30D48AFFEB74B28A530D30ABA0ABB9FFF"), util::size(Usb30ForceEnablePatches_XX_X_X), Usb30ForceEnablePatches_XX_X_X },
+
+ES related patch changelog for 14.0.0:
+14.0.0 ES build-id: 621351EB04199CF0B7A899896C451F2FD1B7A1CE
+14.0.0 ES offset and patch at: 0663D80004E0031FAA
+
+NIFM related patch changelog for 14.0.0:
+14.0.0 NIFM CTEST build-id: BA91B5A61E423F51FB83B2C9E6C153CC5AE27DCB
+14.0.0 NIFM CTEST offset and patch at: 04430C0008E0031FAAC0035FD6
+
+FS-FAT32 patch related changelog for 14.0.0:
+14.0.0 First FS-FAT32 offset and patch at: 079D000004E0031F2A
+14.0.0 Second FS-FAT32 offset and patch at: 1282CC00041F2003D5
+14.0.0 FS-FAT32 SHA256 hash: 887AC150806C75CCC40DA0AA98CC09B3E468E6C78F315F927FBEDD91B16DE27A
+
+FS-ExFAT patch related changelog for 14.0.0:
+14.0.0 First FS-ExFAT offset and patch at: 079D000004E0031F2A
+14.0.0 Second FS-exFAT offset and patch at: 13364C00041F2003D5
+14.0.0 FS-exFAT SHA256 hash: D488D1F29217355C22ABDA773FDEA582B13D475B74BCB02B998C66AB1B3E4309
