@@ -90,7 +90,7 @@ for version in os.listdir('.'):
     ncaParent = f'{version}/titleid/0100000000000033'
     ncaPartial = f'{ncaParent}/Program.nca'
     ncaFull = f'{version}/titleid/0100000000000033/exefs/main'
-    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/0100000000000033/exefs/', f'{version}/titleid/0100000000000033/Program.nca'], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/0100000000000033/exefs/', ncaPartial], stdout=subprocess.DEVNULL)
     process.wait()
     process = subprocess.Popen(['hactool', '--intype=nso0', f'--uncompressed={version}/uncompressed_es.nso0', ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
@@ -100,7 +100,7 @@ for version in os.listdir('.'):
     ncaParent = f'{version}/titleid/0100000000000006'
     ncaPartial = f'{ncaParent}/Program.nca'
     ncaFull = f'{version}/titleid/0100000000000006/exefs/main'
-    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/0100000000000006/exefs/', f'{version}/titleid/0100000000000006/Program.nca'], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/0100000000000006/exefs/', ncaPartial], stdout=subprocess.DEVNULL)
     process.wait()
     process = subprocess.Popen(['hactool', '--intype=nso0', f'--uncompressed={version}/uncompressed_usb.nso0', ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
@@ -110,7 +110,7 @@ for version in os.listdir('.'):
     ncaParent = f'{version}/titleid/010000000000000f'
     ncaPartial = f'{ncaParent}/Program.nca'
     ncaFull = f'{version}/titleid/010000000000000f/exefs/main'
-    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/010000000000000f/exefs/', f'{version}/titleid/010000000000000f/Program.nca'], stdout=subprocess.DEVNULL)
+    process = subprocess.Popen(['hactool', '--intype=nca', f'--exefsdir={version}/titleid/010000000000000f/exefs/', ncaPartial], stdout=subprocess.DEVNULL)
     process.wait()
     process = subprocess.Popen(['hactool', '--intype=nso0', f'--uncompressed={version}/uncompressed_nifm.nso0', ncaFull], stdout=subprocess.DEVNULL)
     process.wait()
@@ -253,7 +253,7 @@ for version in os.listdir('.'):
                 result1 = re.search(b'.{3}\x12.{3}\x71.{3}\x54.{3}\x12.{3}\x71.{3}\x54.{3}\x36.{3}\xf9', read_data)
                 result2 = re.search(b'\x1e\x42\xb9\x1f\xc1\x42\x71', read_data)
                 patch1 = '%06X%s%s' % (result1.end(), '0004', 'E0031F2A')
-                patch2 = '%06X%s%s' % ( result2.start() - 0x5, '0004', '1F2003D5')
+                patch2 = '%06X%s%s' % (result2.start() - 0x5, '0004', '1F2003D5')
                 changelog.write(f'FS-ExFAT patch related changelog for {version}:\n')
                 changelog.write(f'{version} First FS-ExFAT offset and patch at: {patch1}\n')
                 changelog.write(f'{version} Second FS-exFAT offset and patch at: {patch2}\n')
@@ -276,3 +276,8 @@ for version in os.listdir('.'):
     with open(f'../patch_changelog.txt') as print_changelog:
         print(print_changelog.read())
     print_changelog.close()
+
+    with open('../hekate_patches/patches.ini', 'wb') as outfile:
+        for filename in ['../hekate_patches/header.ini', '../hekate_patches/fs_patches.ini', '../hekate_patches/loader_patches.ini']:
+            with open(filename, 'rb') as readfile:
+                shutil.copyfileobj(readfile, outfile)

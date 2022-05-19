@@ -70,10 +70,12 @@ with open('./hekate_patches/loader_patches.ini') as loader_patches:
                             os.remove('./uloader.kip1')
                             os.remove('./loader.kip1')
                             os.remove(atmosphere_zip)
-                            with open('./SigPatches/bootloader/patches.ini', 'wb') as outfile:
+                            with open('./hekate_patches/patches.ini', 'wb') as outfile:
                                 for filename in ['./hekate_patches/header.ini', './hekate_patches/fs_patches.ini', './hekate_patches/loader_patches.ini']:
                                     with open(filename, 'rb') as readfile:
                                         shutil.copyfileobj(readfile, outfile)
+                            outfile.close()
+                            shutil.copyfile('./hekate_patches/patches.ini', './SigPatches/bootloader/patches.ini')
                             shutil.make_archive('SigPatches', 'zip', 'SigPatches')
                 else:
                     print(
